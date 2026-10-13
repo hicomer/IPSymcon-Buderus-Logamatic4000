@@ -519,6 +519,9 @@ class Logamatic4000 extends IPSModule
                 }
                 $this->UpdateErrors($codes);
                 break;
+            case 0xA5: // vom Gateway beobachtet nach Schreibbefehlen, in der Doku nicht beschrieben: vermutlich Quittung
+                $this->Dbg('Quittung vom Gateway (0xA5): ' . bin2hex($p));
+                break;
             default:
                 $this->Dbg('Unbekanntes Telegramm 0x' . dechex($c));
         }

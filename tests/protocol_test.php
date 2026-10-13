@@ -78,6 +78,9 @@ check(L3964::toJsonString("\xDD") === "\xC3\x9D", 'DD wird als UTF-8 kodiert');
 // Dekodierung
 $hk = LogamaticData::decodeHeizkreis([0b00000100, 0b00000000, 40, 38, 42, 40, 0, 0, 100, 50]);
 check($hk['Betriebsart'] === 2 && $hk['RaumSoll'] == 21 &&$hk['VorlaufIst'] === 38, 'Heizkreis-Dekodierung');
+// Messwerte aus dem Betrieb (Kesselkreis HK0, Adresse 0, Typ 0x8A): 110 = kein Fuehler
+$hk0 = LogamaticData::decodeHeizkreis([0x04, 0x01, 0x05, 0x6E, 0x00, 0x6E, 0, 0, 0, 0, 0x80]);
+check($hk0['Betriebsart'] === 2 && $hk0['Sommer'] === true && $hk0['VorlaufSoll'] === 5 && !isset($hk0['VorlaufIst']) && !isset($hk0['RaumIst']), 'HK0: 110 = kein Fuehler wird ausgeblendet');
 $k = LogamaticData::decodeKonfig([0xFB, 0xFC]);
 check($k['Aussentemperatur'] === -5 && $k['AussentemperaturGedaempft'] === -4, 'negative Aussentemperatur');
 $ww = LogamaticData::decodeWarmwasser([0b00000011, 0b00100000, 60, 58, 0, 0b00000001]);

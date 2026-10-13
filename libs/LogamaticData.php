@@ -88,9 +88,10 @@ final class LogamaticData
         self::set($o, 'ExternStoerung', self::bit($bw2, 7));
         self::set($o, 'PartyPause', self::bit($bw2, 8));
         self::set($o, 'VorlaufSoll', $b[2] ?? null);
-        self::set($o, 'VorlaufIst', $b[3] ?? null);
+        // 110 (0x6E) ist der Wert fuer "kein Fuehler" (beim Kesselkreis HK0 des 4211 gemessen)
+        self::set($o, 'VorlaufIst', ($b[3] ?? 110) === 110 ? null : $b[3]);
         self::set($o, 'RaumSoll', isset($b[4]) ? $b[4] / 2 : null);
-        self::set($o, 'RaumIst', isset($b[5]) ? $b[5] / 2 : null);
+        self::set($o, 'RaumIst', ($b[5] ?? 110) === 110 ? null : $b[5] / 2);
         self::set($o, 'Pumpe', $b[8] ?? null);
         self::set($o, 'Stellglied', $b[9] ?? null);
         return $o;
