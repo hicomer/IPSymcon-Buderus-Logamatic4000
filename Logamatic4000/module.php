@@ -114,6 +114,10 @@ class Logamatic4000 extends IPSModule
                 IPS_SetName($id, $name);
             }
             IPS_SetPosition($id, $pos);
+            if (IPS_GetVariable($id)['VariableCustomAction'] === $this->InstanceID) {
+                // Altlast einer frueheren Version: die Instanz-ID als "Skript" ueberdeckt die normale Aktion
+                IPS_SetVariableCustomAction($id, 0);
+            }
             if ($action && IPS_GetVariable($id)['VariableAction'] !== $this->InstanceID) {
                 // EnableAction findet die Variable nur direkt unter der Instanz; die Aktion bleibt beim Verschieben erhalten
                 if (IPS_GetObject($id)['ParentID'] !== $this->InstanceID) {
