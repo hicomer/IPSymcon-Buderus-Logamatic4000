@@ -76,6 +76,18 @@ tests/protocol_test.php    PHP-CLI-Tests ohne Symcon (php tests/protocol_test.ph
 * Gateway sendet im Normal-Modus selbst: Senden erst nach 0,4 s Leitungsruhe, bis zu 25 Konflikt-Wiederholungen.
 * Zu prüfen: HK5-Werte (Vorlauf Ist 110, Raum Ist 55) wirken unplausibel, Rohbytes mit `BLM_GetRaw` ansehen.
 
+## Am Gerät verifizierte Byte-Positionen (Parameter-Dump 13.10.2026, 4211, Adresse 0)
+
+* Monitor: `0xA7`-Offset = Byte-Index; `0xAB`-Offsets laufen in 6er-Schritten (Index direkt); nur `0xA9` (Parameter) in 7er-Schritten.
+* Heizkreis (Typ 0x07..0x0A, 0x16): Index 1 Schwelle, 2 Nacht (x2), 3 Tag (x2), 4 Betriebsart, 16 Auslegung, 49 Heizsystem.
+* Warmwasser (0x0C): 1 Desinfektion, 2 Temp, 3 Tag, 4 Stunde, 9 Soll, 12 Betriebsart, 19 Zirkulation-Betriebsart.
+  Zirkulationsläufe/h (Index 16) und "tägliche Aufheizung" (Offset 0x2A, nicht im Dump) sind nicht verifiziert.
+* Kessel (0x10): 11 Abgasgrenze (x5), 57 Lastbegrenzung, 63 Nachtabsenkung, 64 Betriebsart.
+* Solar (0x24): **Byte 5** = Betriebsart (Index 4) und Max. Speicher 2 (Index 16), 5 = Verbraucher, 6/7 = Max/Min Speicher 1, 24 = Glykol.
+* "Kein Fühler": 110 (0x6E) bei HK-Vorlauf/Raum Ist, 255 bei Solar-Fühlern.
+* Anlage: HK1 = Fußbodenheizung (Heizsystem 3, Auslegung 40 °C), HK2-4 nicht vorhanden, Desinfektion derzeit AUS,
+  Desinfektionstag Do (3), Stunde 23. Gateway sendet ungefragt `0xA5 addr 00 00 01` (Bedeutung unbekannt).
+* Unbekannter Typ 0x1E, 0x20 (Strategie), 0x23 und 0x0B/0x0D tauchen im Dump auf (nicht verwendet).
 ## Offener Stand / Nächste Schritte
 
 * **Nicht an Hardware getestet.** Erster Test: Debug-Option an, Rohtelegramme prüfen (Offsets, Einheiten).

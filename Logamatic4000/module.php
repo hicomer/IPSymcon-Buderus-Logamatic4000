@@ -39,7 +39,7 @@ class Logamatic4000 extends IPSModule
 
         $this->RegisterPropertyInteger('Address', 0);
         $this->RegisterPropertyInteger('PollMinutes', 5);
-        $this->RegisterPropertyBoolean('ReadParams', false);
+        $this->RegisterPropertyBoolean('ReadParams', true);
         // Voreinstellung fuer eine Logamatic 4211: HK0 (= HK5 im Protokoll), Warmwasser, Kessel, Solar
         $this->RegisterPropertyBoolean('HK1', false);
         $this->RegisterPropertyBoolean('HK2', false);
@@ -1148,11 +1148,11 @@ class Logamatic4000 extends IPSModule
         }
         if ($this->ReadPropertyBoolean('Solar')) {
             $ty = LogamaticData::PT_SOLAR;
-            $tab['Solar_Betriebsart'] = $P($ty, 0x00, 4, 0, 2);
+            $tab['Solar_Betriebsart'] = $P($ty, 0x00, 5, 0, 2);
             $tab['Solar_Verbraucher'] = $P($ty, 0x00, 6, 0, 2);
             $tab['Solar_MaxSp1'] = $P($ty, 0x07, 1, 30, 90);
             $tab['Solar_MinSp1'] = $P($ty, 0x07, 2, 30, 55);
-            $tab['Solar_MaxSp2'] = $P($ty, 0x0E, 4, 20, 90);
+            $tab['Solar_MaxSp2'] = $P($ty, 0x0E, 5, 20, 90);
             $tab['Solar_Glykol'] = $P($ty, 0x1C, 1, 20, 50, 0.1);
         }
         return $tab;
