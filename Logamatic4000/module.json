@@ -1,0 +1,15 @@
+﻿{
+  "id": "{C41D8E27-5A6F-4B93-A0E1-73F2B8D6C954}",
+  "name": "Logamatic 4000",
+  "type": 3,
+  "vendor": "Buderus",
+  "aliases": [],
+  "parentRequirements": [
+    "{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}",
+    "{6DC3D946-0D31-450F-A8C6-C42A8B8B4BC6}"
+  ],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "BLM",
+  "url": "https://github.com/hicomer/IPSymcon-Buderus-Logamatic4000"
+}

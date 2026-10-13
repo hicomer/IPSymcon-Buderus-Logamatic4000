@@ -1,0 +1,46 @@
+{
+  "elements": [
+    { "type": "NumberSpinner", "name": "Address", "caption": "CAN-Adresse des Regelgeräts (Drehcodierschalter, 0-15)", "minimum": 0, "maximum": 15 },
+    { "type": "NumberSpinner", "name": "PollMinutes", "caption": "Vollständige Abfrage alle ... Minuten (0 = nur beim Verbinden)", "minimum": 0, "maximum": 1440 },
+    { "type": "CheckBox", "name": "ReadParams", "caption": "Einstellbare Parameter vom Regelgerät zurücklesen (experimentell)" },
+    {
+      "type": "ExpansionPanel", "caption": "Vorhandene Module / Funktionen",
+      "items": [
+        { "type": "CheckBox", "name": "HK1", "caption": "Heizkreis 1" },
+        { "type": "CheckBox", "name": "HK2", "caption": "Heizkreis 2" },
+        { "type": "CheckBox", "name": "HK3", "caption": "Heizkreis 3" },
+        { "type": "CheckBox", "name": "HK4", "caption": "Heizkreis 4" },
+        { "type": "CheckBox", "name": "HK5", "caption": "Heizkreis 5 / HK0 (Kesselkreis bei 4211/4221)" },
+        { "type": "CheckBox", "name": "WW", "caption": "Warmwasser (inkl. Legionellen-Automatik)" },
+        { "type": "CheckBox", "name": "Kessel", "caption": "Kessel (bodenstehend)" },
+        { "type": "CheckBox", "name": "Solar", "caption": "Solarmodul FM443" },
+        { "type": "CheckBox", "name": "Strat447", "caption": "Strategiemodul FM447 (mehrere bodenstehende Kessel)" },
+        { "type": "CheckBox", "name": "StratUBA", "caption": "Strategie wandhängend UBA (FM456/457)" },
+        { "type": "CheckBox", "name": "StratFM458", "caption": "Strategiemodul FM458" }
+      ]
+    },
+    {
+      "type": "ExpansionPanel", "caption": "Legionellen-Automatik",
+      "items": [
+        { "type": "Label", "caption": "Die Automatik schaltet die thermische Desinfektion des Regelgeräts kurz vor dem Termin aus, wenn das Wasser in den letzten Tagen bereits heiß genug war (z. B. durch Solar)." },
+        { "type": "NumberSpinner", "name": "LegiMinTemp", "caption": "Mindesttemperatur", "suffix": "°C", "minimum": 50, "maximum": 75 },
+        { "type": "NumberSpinner", "name": "LegiHoldMinutes", "caption": "Mindestdauer über dieser Temperatur", "suffix": "Minuten", "minimum": 1, "maximum": 240 },
+        { "type": "NumberSpinner", "name": "LegiValidDays", "caption": "Heiße Phase zählt für ... Tage vor dem Termin", "suffix": "Tage", "minimum": 1, "maximum": 14 },
+        { "type": "NumberSpinner", "name": "LegiHoursBefore", "caption": "Entscheidung ... Stunden vor dem Termin", "suffix": "Stunden", "minimum": 1, "maximum": 24 },
+        { "type": "SelectVariable", "name": "LegiSourceVar", "caption": "Alternative Temperaturquelle (leer = Warmwasser-Ist des Regelgeräts)" }
+      ]
+    },
+    { "type": "CheckBox", "name": "ClockSyncDaily", "caption": "Uhr des Regelgeräts täglich um 03:00 Uhr stellen" },
+    { "type": "CheckBox", "name": "Debug", "caption": "Debug-Ausgabe (Rohtelegramme im Debug-Fenster)" }
+  ],
+  "actions": [
+    { "type": "Button", "caption": "Jetzt abfragen", "onClick": "BLM_Poll($id);" },
+    { "type": "Button", "caption": "Parameter lesen", "onClick": "BLM_ReadParameters($id);" },
+    { "type": "Button", "caption": "Uhr des Regelgeräts stellen", "onClick": "BLM_SyncClock($id);" },
+    { "type": "Button", "caption": "Legionellen-Prüfung jetzt", "onClick": "BLM_LegionellaCheck($id);" }
+  ],
+  "status": [
+    { "code": 102, "icon": "active", "caption": "Instanz aktiv" },
+    { "code": 201, "icon": "error", "caption": "Ungültige CAN-Adresse" }
+  ]
+}

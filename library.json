@@ -1,0 +1,12 @@
+﻿{
+  "id": "{7A3C1E52-9B4D-4F0A-8C16-2D5E7B90A413}",
+  "author": "mh",
+  "name": "Buderus Logamatic 4000",
+  "url": "https://github.com/hicomer/IPSymcon-Buderus-Logamatic4000",
+  "version": "1.0",
+  "build": 1,
+  "date": 1760000000,
+  "compatibility": {
+    "version": "6.0"
+  }
+}
