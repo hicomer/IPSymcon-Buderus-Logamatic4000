@@ -227,10 +227,35 @@ class Logamatic4000 extends IPSModule
         $this->LegiTick();
     }
 
-    /** Aktuelle Rohdaten (Debug). */
+    /** Aktuelle Monitor-Rohdaten (Debug), lesbar: Typ, dann Byte-Index:Wert in Dezimal. */
     public function GetRaw(): string
     {
-        return $this->ReadAttributeString('Raw');
+        return $this->DumpTable($this->ReadAttributeString('Raw'), 'Monitor');
+    }
+
+    /** Gelesene Parameter-Rohdaten (Debug), gleiches Format wie GetRaw. Zuerst "Parameter lesen" ausfuehren. */
+    public function GetParams(): string
+    {
+        return $this->DumpTable($this->ReadAttributeString('Par'), 'Parameter');
+    }
+
+    private function DumpTable(string $json, string $title): string
+    {
+        $t = json_decode($json, true) ?: [];
+        ksort($t);
+        $out = [$title . '-Rohdaten (Index:Wert dezimal, 6 je Zeile)'];
+        foreach ($t as $type => $bytes) {
+            ksort($bytes);
+            $out[] = sprintf('Typ 0x%02X (%d):', $type, $type);
+            foreach (array_chunk($bytes, 6, true) as $chunk) {
+                $cells = [];
+                foreach ($chunk as $i => $v) {
+                    $cells[] = $i . ':' . $v;
+                }
+                $out[] = '  ' . implode(' ', $cells);
+            }
+        }
+        return implode("\n", $out);
     }
 
     public function Tick(): void
