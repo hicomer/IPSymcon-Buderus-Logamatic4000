@@ -5,8 +5,7 @@
   "vendor": "Buderus",
   "aliases": [],
   "parentRequirements": [
-    "{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}",
-    "{6DC3D946-0D31-450F-A8C6-C42A8B8B4BC6}"
+    "{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}"
   ],
   "childRequirements": [],
   "implemented": [],
