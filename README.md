@@ -62,8 +62,7 @@ kann eine andere Temperaturvariable gewählt werden.
 * **Offsets bei Blöcken**: Die Doku nennt für 6-Byte-Blöcke Offsets in 7er-Schritten (0, 7, 14 …). Das Modul
   rechnet Block-Offsets (`0xAB`, `0xA9`) mit `offset/7*6` um, Einzelwerte (`0xA7`) direkt. Stimmt das
   nicht, zeigt das Debug-Fenster (Option *Debug*) die Rohtelegramme.
-* **Parameter zurücklesen** (`0xA1`/`0xA9`) ist nur für die Schaltuhr dokumentiert. Die Option nimmt an,
-  dass die übrigen Typen dasselbe Layout wie beim Schreiben haben. Standardmäßig aus.
+* **Parameter zurücklesen** (`0xA1`/`0xA9`): Die Positionen von Heizkreis, Warmwasser, Kessel und Solar sind an einer 4211 verifiziert. Das Modul liest sie beim Verbinden und per Button *Parameter lesen* ein.
 * Mehrere Zuordnungen von Byte-Positionen in der PDF-Tabelle sind im Text verrutscht (z. B. Zirkulations-
   läufe/h = Byte 5 bei Offset 0x0E, Solar-Betriebsart = Byte 4). Erst an unkritischen Werten testen.
 * Brennerlaufzeiten werden als **Minuten** interpretiert (Einheit steht nicht in der Doku).

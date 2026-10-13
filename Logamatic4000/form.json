@@ -2,7 +2,6 @@
   "elements": [
     { "type": "NumberSpinner", "name": "Address", "caption": "CAN-Adresse des Regelgeräts (Drehcodierschalter, 0-15)", "minimum": 0, "maximum": 15 },
     { "type": "NumberSpinner", "name": "PollMinutes", "caption": "Vollständige Abfrage alle ... Minuten (0 = nur beim Verbinden)", "minimum": 0, "maximum": 1440 },
-    { "type": "CheckBox", "name": "ReadParams", "caption": "Einstellbare Parameter vom Regelgerät zurücklesen (experimentell)" },
     {
       "type": "ExpansionPanel", "caption": "Vorhandene Module / Funktionen",
       "items": [

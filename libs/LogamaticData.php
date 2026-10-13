@@ -93,7 +93,7 @@ final class LogamaticData
         self::set($o, 'RaumSoll', isset($b[4]) ? $b[4] / 2 : null);
         self::set($o, 'RaumIst', ($b[5] ?? 110) === 110 ? null : $b[5] / 2);
         self::set($o, 'Pumpe', $b[8] ?? null);
-        self::set($o, 'Stellglied', $b[9] ?? null);
+        self::set($o, 'Stellglied', self::s8($b[9] ?? null)); // Puls/Pause-Ansteuerung, negativ = schliessen
         return $o;
     }
 

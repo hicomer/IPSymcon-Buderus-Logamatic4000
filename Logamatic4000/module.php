@@ -39,7 +39,6 @@ class Logamatic4000 extends IPSModule
 
         $this->RegisterPropertyInteger('Address', 0);
         $this->RegisterPropertyInteger('PollMinutes', 5);
-        $this->RegisterPropertyBoolean('ReadParams', true);
         // Voreinstellung fuer eine Logamatic 4211: HK0 (= HK5 im Protokoll), Warmwasser, Kessel, Solar
         $this->RegisterPropertyBoolean('HK1', false);
         $this->RegisterPropertyBoolean('HK2', false);
@@ -622,9 +621,6 @@ class Logamatic4000 extends IPSModule
     /** Gelesene Parameterbytes in die Variablen uebernehmen (nur wenn "Parameter lesen" aktiv). */
     private function SyncParamVars(): void
     {
-        if (!$this->ReadPropertyBoolean('ReadParams')) {
-            return;
-        }
         $par = json_decode($this->ReadAttributeString('Par'), true) ?: [];
         $known = json_decode($this->ReadAttributeString('Known'), true) ?: [];
         foreach ($this->ParamTable() as $ident => $s) {
@@ -1322,7 +1318,7 @@ class Logamatic4000 extends IPSModule
             $add($g, $p . 'VorlaufSoll', $nm . ' Vorlauf Soll', $F, $T);
             $add($g, $p . 'VorlaufIst', $nm . ' Vorlauf Ist', $F, $T);
             $add($g, $p . 'Pumpe', $nm . ' Pumpe', $I, 'BLM.Prozent');
-            $add($g, $p . 'Stellglied', $nm . ' Mischer', $I, 'BLM.Prozent');
+            $add($g, $p . 'Stellglied', $nm . ' Mischer (Puls/Pause, negativ = zu)', $I, 'BLM.ProzentVZ');
             $add($g, $p . 'Sommer', $nm . ' Sommerbetrieb', $B, '~Switch');
             $add($g, $p . 'Tagbetrieb', $nm . ' Tagbetrieb', $B, '~Switch');
             $add($g, $p . 'Ferien', $nm . ' Ferienbetrieb', $B, '~Switch');
@@ -1492,6 +1488,7 @@ class Logamatic4000 extends IPSModule
         $num('BLM.SolarMax1', $I, 30, 90, 1, ' °C');
         $num('BLM.SolarMin1', $I, 30, 55, 1, ' °C');
         $num('BLM.SolarMax2', $I, 20, 90, 1, ' °C');
+        $num('BLM.ProzentVZ', $I, -100, 100, 1, ' %');
         $num('BLM.Lastbegr', $I, -31, 31, 1, ' °C');
         $num('BLM.kW', $I, 0, 9999, 1, ' kW');
         $num('BLM.TempM30_30', $I, -30, 30, 1, ' °C');
