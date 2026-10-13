@@ -1,4 +1,4 @@
-﻿# CLAUDE.md – IP-Symcon-Modul Buderus Logamatic 4000
+# CLAUDE.md – IP-Symcon-Modul Buderus Logamatic 4000
 
 ## Ziel
 

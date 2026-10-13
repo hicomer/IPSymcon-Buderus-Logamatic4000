@@ -1,4 +1,4 @@
-﻿# Buderus Logamatic 4000 für IP-Symcon
+# Buderus Logamatic 4000 für IP-Symcon
 
 Symcon-Modul zur Anzeige und Bedienung einer Buderus Logamatic 4000 über das RS232-Gateway
 (Prozedur 3964R, 9600 Baud), z. B. hinter einem COM-nach-LAN-Adapter (ExSys EX-6034).
