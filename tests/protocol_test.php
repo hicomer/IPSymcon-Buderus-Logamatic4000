@@ -85,6 +85,15 @@ $k = LogamaticData::decodeKonfig([0xFB, 0xFC]);
 check($k['Aussentemperatur'] === -5 && $k['AussentemperaturGedaempft'] === -4, 'negative Aussentemperatur');
 $ww = LogamaticData::decodeWarmwasser([0b00000011, 0b00100000, 60, 58, 0, 0b00000001]);
 check($ww['DesinfektionAktiv'] === true && $ww['Betriebsart'] === 2 && $ww['Ladepumpe'] === true, 'Warmwasser-Dekodierung');
+// Solar aus dem Betrieb: Kollektor 14,2 C, WMZ-Fuehler 255 = nicht vorhanden
+$sol = array_fill(0, 36, 0);
+$sol[3] = 0x00;
+$sol[4] = 0x8E;
+$sol[12] = 0xFF;
+$sol[13] = 0xFF;
+$sol[29] = 0x0E;
+$so = LogamaticData::decodeSolar($sol);
+check($so['Kollektor'] === 14.2 && !isset($so['Vorlauf']) && !isset($so['Ruecklauf']), 'Solar: Kollektor 14,2 und 255 = kein Fuehler');
 check(LogamaticData::errorText(52) === 'Brennerstörung', 'Fehlertabelle');
 
 // Schaltuhr: Standardprogramm "Familie" muss exakt der Tabelle der Doku (Seite 43-47) entsprechen

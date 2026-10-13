@@ -194,12 +194,14 @@ final class LogamaticData
             $o['Kollektor'] = ($v > 32767 ? $v - 65536 : $v) / 10;
         }
         self::set($o, 'Pumpe', $b[5] ?? null);
-        self::set($o, 'Speicher1Unten', $b[6] ?? null);
+        // 255 = kein Fuehler (z.B. kein Waermemengenzaehler vorhanden)
+        $t = fn (int $i) => (isset($b[$i]) && $b[$i] !== 255) ? $b[$i] : null;
+        self::set($o, 'Speicher1Unten', $t(6));
         self::set($o, 'Status1', $b[7] ?? null);
-        self::set($o, 'Speicher2Unten', $b[8] ?? null);
+        self::set($o, 'Speicher2Unten', $t(8));
         self::set($o, 'Status2', $b[9] ?? null);
-        self::set($o, 'Vorlauf', $b[12] ?? null);
-        self::set($o, 'Ruecklauf', $b[13] ?? null);
+        self::set($o, 'Vorlauf', $t(12));
+        self::set($o, 'Ruecklauf', $t(13));
         self::set($o, 'Volumenstrom', self::u($b, 14, 15));
         self::set($o, 'Leistung', self::u($b, 16, 17));
         $w1 = self::u($b, 18, 19, 20);

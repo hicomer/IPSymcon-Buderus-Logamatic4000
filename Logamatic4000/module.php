@@ -259,6 +259,7 @@ class Logamatic4000 extends IPSModule
 
     public function RequestAction($Ident, $Value)
     {
+        $this->Dbg('RequestAction ' . $Ident . ' = ' . json_encode($Value));
         if ($Ident === 'Legi_Aktiv') {
             $this->SetV($Ident, (bool) $Value);
             if (!$Value && $this->ReadAttributeBoolean('LegiSuppressed')) {
@@ -400,6 +401,7 @@ class Logamatic4000 extends IPSModule
         }
         $frame = chr(0xB0) . chr($this->Addr()) . chr($spec['t']) . chr($spec['o']) . implode('', array_map('chr', $d));
 
+        $this->Dbg(sprintf('Schreibauftrag %s: Typ 0x%02X Offset 0x%02X Byte %d Rohwert %d, Block %s', $ident, $spec['t'], $spec['o'], $spec['b'], $raw, bin2hex($frame)));
         $this->QueueJob([
             'kind' => 'write',
             'steps' => $this->WriteSteps([$frame]),
@@ -527,19 +529,14 @@ class Logamatic4000 extends IPSModule
         }
     }
 
-    /** Offset -> Byteindex: Bloecke tragen den Offset in 7er-Schritten (Doku "Einstellbare Parameter" 4.5), Einzelwerte direkt. */
-    private function ToIndex(int $off, bool $block): int
-    {
-        if ($block && $off % 7 === 0) {
-            return intdiv($off, 7) * 6;
-        }
-        return $off;
-    }
-
+    /**
+     * Monitorwerte: Der Offset ist der Byte-Index im Datentyp (Einzelwerte 0xA7 direkt, Bloecke 0xAB in
+     * 6er-Schritten; am Geraet gemessen). Nur die Parameterantworten 0xA9 zaehlen in 7er-Schritten.
+     */
     private function StoreMonitor(int $type, int $off, array $bytes, bool $block): void
     {
         $raw = json_decode($this->ReadAttributeString('Raw'), true) ?: [];
-        $base = $this->ToIndex($off, $block);
+        $base = $off;
         foreach ($bytes as $i => $b) {
             $raw[$type][$base + $i] = $b;
         }
@@ -738,6 +735,7 @@ class Logamatic4000 extends IPSModule
                     return;
                 }
                 $this->st['job'] = array_shift($this->st['queue']);
+                $this->Dbg('Starte Auftrag ' . $this->st['job']['kind']);
                 $this->st['job']['pos'] = 0;
                 $this->st['job']['ph'] = 'send';
                 $this->st['job']['retry'] = 0;
