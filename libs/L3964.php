@@ -38,6 +38,13 @@ final class L3964
     private int $stxTries = 0;
     private int $dataTries = 0;
     private float $deadline = 0.0;
+    private float $act = 0.0; // Zeitpunkt der letzten Leitungsaktivitaet
+
+    /** Sekunden seit dem letzten gesendeten oder empfangenen Byte. */
+    public function quietFor(float $now): float
+    {
+        return $now - $this->act;
+    }
 
     /** Symcon transportiert Binaerdaten als UTF-8-JSON: Bytes 0x80-0xFF als Latin-1-Zeichen kodieren (ohne mbstring). */
     public static function toJsonString(string $bin): string
@@ -77,6 +84,7 @@ final class L3964
         $o->stxTries = (int) ($a['stxTries'] ?? 0);
         $o->dataTries = (int) ($a['dataTries'] ?? 0);
         $o->deadline = (float) ($a['deadline'] ?? 0);
+        $o->act = (float) ($a['act'] ?? 0);
         return $o;
     }
 
@@ -92,6 +100,7 @@ final class L3964
             'stxTries'  => $this->stxTries,
             'dataTries' => $this->dataTries,
             'deadline'  => $this->deadline,
+            'act'       => $this->act,
         ];
     }
 
@@ -108,6 +117,7 @@ final class L3964
         $this->dataTries = 1;
         $this->mode = 'txstx';
         $this->deadline = $now + self::QVZ;
+        $this->act = $now;
         return chr(self::STX);
     }
 
@@ -199,6 +209,7 @@ final class L3964
 
     private function byte(int $b, float $now, array &$r): void
     {
+        $this->act = $now;
         switch ($this->mode) {
             case 'idle':
                 if ($b === self::STX) {

@@ -28,6 +28,7 @@ class Logamatic4000 extends IPSModule
     private array $st = [];
     private string $out = '';
     private ?array $defCache = null;
+    private ?array $idMap = null;
 
     // ------------------------------------------------------------------ Lebenszyklus
 
@@ -65,6 +66,7 @@ class Logamatic4000 extends IPSModule
         $this->RegisterAttributeString('Known', '[]');   // Parameter-Variablen mit bekanntem Istwert
         $this->RegisterAttributeString('Errors', '[]');  // aktuell offene Fehlercodes
         $this->RegisterAttributeString('History', '[]');
+        $this->RegisterAttributeString('Trace', '[]');
         $this->RegisterAttributeInteger('LastRx', 0);
         $this->RegisterAttributeInteger('LastPoll', 0);
         $this->RegisterAttributeInteger('LastMinute', 0);
@@ -86,17 +88,54 @@ class Logamatic4000 extends IPSModule
         $this->defCache = null;
 
         $this->CreateProfiles();
-        $legiExisted = @IPS_GetObjectIDByIdent('Legi_Aktiv', $this->InstanceID) !== false;
+        $this->idMap = null;
+        $legiExisted = isset($this->IdMap()['Legi_Aktiv']);
+        $usedCats = [];
         foreach ($this->Defs() as $d) {
             [$group, $ident, $name, $type, $profile, $action, $pos] = $d;
-            $keep = $this->GroupEnabled($group);
-            $this->MaintainVariable($ident, $name, $type, $profile, $pos, $keep);
-            if ($keep && $action) {
-                $this->EnableAction($ident);
+            $id = $this->IdMap()[$ident] ?? 0;
+            if (!$this->GroupEnabled($group)) {
+                if ($id > 0) {
+                    IPS_DeleteVariable($id);
+                    $this->idMap = null;
+                }
+                continue;
+            }
+            if ($id === 0) {
+                // MaintainVariable findet nur direkte Kinder der Instanz, daher nur zum Neuanlegen verwenden
+                $this->MaintainVariable($ident, $name, $type, $profile, $pos, true);
+                $id = (int) @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+                $this->idMap = null;
+                if ($id === 0) {
+                    continue;
+                }
+            }
+            if (IPS_GetName($id) !== $name) {
+                IPS_SetName($id, $name);
+            }
+            IPS_SetPosition($id, $pos);
+            $cat = $this->CategoryOf($group, $ident);
+            $parent = $this->InstanceID;
+            if ($cat !== null) {
+                $usedCats['cat_' . $cat[0]] = true;
+                $parent = $this->EnsureCategory($cat);
+            }
+            if (IPS_GetObject($id)['ParentID'] !== $parent) {
+                IPS_SetParent($id, $parent);
+                $this->idMap = null;
+            }
+            if ($action) {
+                IPS_SetVariableCustomAction($id, $this->InstanceID); // ruft RequestAction der Instanz auf
+            }
+        }
+        foreach ($this->IdMap() as $ident => $cid) { // nicht mehr benoetigte Kategorien entfernen
+            if (strncmp($ident, 'cat_', 4) === 0 && !isset($usedCats[$ident]) && count(IPS_GetChildrenIDs($cid)) === 0) {
+                IPS_DeleteCategory($cid);
+                $this->idMap = null;
             }
         }
         if ($this->GroupEnabled('LEGI') && !$legiExisted) {
-            $this->SetValue('Legi_Aktiv', true); // Erstanlage: Automatik standardmaessig an
+            $this->SetV('Legi_Aktiv', true); // Erstanlage: Automatik standardmaessig an
         }
 
         $old = $this->ReadAttributeInteger('ParentID');
@@ -202,6 +241,7 @@ class Logamatic4000 extends IPSModule
             $this->Engine($now);
         });
 
+        $this->SyncTrace();
         $minute = intdiv(time(), 60);
         if ($minute !== $this->ReadAttributeInteger('LastMinute')) {
             $this->WriteAttributeInteger('LastMinute', $minute);
@@ -215,7 +255,7 @@ class Logamatic4000 extends IPSModule
     public function RequestAction($Ident, $Value)
     {
         if ($Ident === 'Legi_Aktiv') {
-            $this->SetValue($Ident, (bool) $Value);
+            $this->SetV($Ident, (bool) $Value);
             if (!$Value && $this->ReadAttributeBoolean('LegiSuppressed')) {
                 $this->WriteParam('WW_Desinfektion', 1, 'Legionellen-Automatik aus: Desinfektion wieder freigeben');
             }
@@ -278,7 +318,7 @@ class Logamatic4000 extends IPSModule
         $type = LogamaticData::PT_KANAL[$channel];
         $par = json_decode($this->ReadAttributeString('Par'), true) ?: [];
         if ($prefix[0] === 'H') { // Heizkreis: Pause/Party/Ferien stehen als Variablen
-            $meta = [(int) $this->GetValue($prefix . 'Pause'), (int) $this->GetValue($prefix . 'Party'), (int) $this->GetValue($prefix . 'Ferientage')];
+            $meta = [(int) $this->GV($prefix . 'Pause'), (int) $this->GV($prefix . 'Party'), (int) $this->GV($prefix . 'Ferientage')];
         } else {
             $meta = [(int) ($par[$type][1] ?? 0), (int) ($par[$type][2] ?? 0), (int) ($par[$type][3] ?? 0)];
         }
@@ -287,7 +327,7 @@ class Logamatic4000 extends IPSModule
         for ($chunk = 0; $chunk < 15; $chunk++) {
             $frames[] = chr(0xB0) . chr($this->Addr()) . chr($type) . chr($chunk * 7) . substr($block, $chunk * 6, 6);
         }
-        $old = [[$prefix . 'Schaltprogramm', $this->GetValue($prefix . 'Schaltprogramm'), true], [$prefix . 'Schaltuhr', $this->GetValue($prefix . 'Schaltuhr'), true]];
+        $old = [[$prefix . 'Schaltprogramm', $this->GV($prefix . 'Schaltprogramm'), true], [$prefix . 'Schaltuhr', $this->GV($prefix . 'Schaltuhr'), true]];
         $this->QueueJob(['kind' => 'schedule', 'steps' => $this->WriteSteps($frames), 'undo' => $old], true);
 
         $this->SV($prefix . 'Schaltprogramm', $program);
@@ -340,7 +380,7 @@ class Logamatic4000 extends IPSModule
             return false;
         }
         $raw = (int) round($v * $spec['mul']);
-        $cur = $this->GetValue($ident);
+        $cur = $this->GV($ident);
         $known = in_array($ident, json_decode($this->ReadAttributeString('Known'), true) ?: [], true);
         if ($known && abs((float) $cur - $v) < 0.001) {
             $this->Dbg('Schreiben uebersprungen (unveraendert): ' . $ident);
@@ -411,7 +451,7 @@ class Logamatic4000 extends IPSModule
         if ($res['conflict'] && $job !== null && $job['ph'] === 'sending') {
             $this->st['job']['retry']++;
             $this->st['job']['ph'] = 'send';
-            if ($this->st['job']['retry'] > 5) {
+            if ($this->st['job']['retry'] > 25) {
                 $this->JobFail('Initialisierungskonflikt');
             }
         }
@@ -702,7 +742,9 @@ class Logamatic4000 extends IPSModule
             switch ($job['ph']) {
                 case 'send':
                     $link = L3964::fromArray($this->st['link']);
-                    if (!$link->isIdle()) {
+                    // erst senden, wenn das Gateway kurz ruhig ist: es sendet im Normal-Modus selbst und
+                    // blockiert sonst mit eigenem STX (Initialisierungskonflikt)
+                    if (!$link->isIdle() || $link->quietFor($now) < 0.4) {
                         return;
                     }
                     $this->out .= $link->send((string) hex2bin($job['steps'][$job['pos']]['p']), $now);
@@ -792,6 +834,17 @@ class Logamatic4000 extends IPSModule
     {
         if ($this->ReadPropertyBoolean('Debug')) {
             $this->SendDebug('Logamatic', $msg, 0);
+            $t = json_decode($this->ReadAttributeString('Trace'), true) ?: [];
+            array_unshift($t, date('H:i:s') . ' ' . $msg);
+            $this->WriteAttributeString('Trace', json_encode(array_slice($t, 0, 60)));
+        }
+    }
+
+    /** Telegrammprotokoll-Variable aus dem Ringpuffer fuellen (nur bei aktivem Debug). */
+    private function SyncTrace(): void
+    {
+        if ($this->ReadPropertyBoolean('Debug')) {
+            $this->SV('Telegramprotokoll', implode("\n", json_decode($this->ReadAttributeString('Trace'), true) ?: []));
         }
     }
 
@@ -891,12 +944,12 @@ class Logamatic4000 extends IPSModule
         } elseif ($this->ReadAttributeInteger('LegiHotSince') !== 0) {
             $this->WriteAttributeInteger('LegiHotSince', 0);
         }
-        if ($this->GetValue('Legi_LetzteErhitzung') === 0 && $this->ReadAttributeInteger('LegiLast') > 0) {
+        if ($this->GV('Legi_LetzteErhitzung') === 0 && $this->ReadAttributeInteger('LegiLast') > 0) {
             $this->SV('Legi_LetzteErhitzung', $this->ReadAttributeInteger('LegiLast'));
         }
 
         // 2) Entscheidung
-        if (!$this->GetValue('Legi_Aktiv')) {
+        if (!$this->GV('Legi_Aktiv')) {
             $this->LegiStatus('Automatik ausgeschaltet');
             return;
         }
@@ -911,9 +964,9 @@ class Logamatic4000 extends IPSModule
             $this->LegiStatus('Keine Verbindung zum Gateway');
             return;
         }
-        $en = (bool) $this->GetValue('WW_Desinfektion');
-        $day = (int) $this->GetValue('WW_DesinfTag');
-        $hour = (int) $this->GetValue('WW_DesinfStunde');
+        $en = (bool) $this->GV('WW_Desinfektion');
+        $day = (int) $this->GV('WW_DesinfTag');
+        $hour = (int) $this->GV('WW_DesinfStunde');
         $supp = $this->ReadAttributeBoolean('LegiSuppressed');
         if ($supp && $en) {
             $this->WriteAttributeBoolean('LegiSuppressed', false);
@@ -930,7 +983,7 @@ class Logamatic4000 extends IPSModule
             }
             return;
         }
-        if ($this->GetValue('WW_DesinfektionAktiv')) {
+        if ($this->GV('WW_DesinfektionAktiv')) {
             $this->LegiStatus('Desinfektion läuft');
             return;
         }
@@ -1104,9 +1157,95 @@ class Logamatic4000 extends IPSModule
             default:
                 $value = (string) $value;
         }
-        if ($this->GetValue($ident) !== $value) {
-            $this->SetValue($ident, $value);
+        $this->SetV($ident, $value);
+    }
+
+    // ------------------------------------------------------------------ Variablen-Zugriff (Variablen liegen in Unterkategorien)
+
+    /**
+     * IPSModule::GetIDForIdent/SetValue finden nur direkte Kinder der Instanz. Da die Variablen in
+     * Kategorien unterhalb der Instanz liegen, werden die IDs hier selbst aufgeloest.
+     *
+     * @return array<string,int> Ident => Objekt-ID (Variablen und Kategorien)
+     */
+    private function IdMap(): array
+    {
+        if ($this->idMap === null) {
+            $this->idMap = [];
+            foreach (IPS_GetChildrenIDs($this->InstanceID) as $c) {
+                $o = IPS_GetObject($c);
+                if ($o['ObjectIdent'] !== '') {
+                    $this->idMap[$o['ObjectIdent']] = $c;
+                }
+                if ($o['ObjectType'] === 0) { // Kategorie
+                    foreach (IPS_GetChildrenIDs($c) as $cc) {
+                        $oc = IPS_GetObject($cc);
+                        if ($oc['ObjectIdent'] !== '') {
+                            $this->idMap[$oc['ObjectIdent']] = $cc;
+                        }
+                    }
+                }
+            }
         }
+        return $this->idMap;
+    }
+
+    private function GV(string $ident)
+    {
+        $id = $this->IdMap()[$ident] ?? 0;
+        return $id > 0 ? GetValue($id) : null;
+    }
+
+    private function SetV(string $ident, $value): void
+    {
+        $id = $this->IdMap()[$ident] ?? 0;
+        if ($id > 0 && GetValue($id) !== $value) {
+            SetValue($id, $value);
+        }
+    }
+
+    /** Kategorie (Schluessel, Name, Position) fuer eine Variable, null = direkt unter der Instanz. */
+    private function CategoryOf(string $group, string $ident): ?array
+    {
+        if ($group === 'ALLG') {
+            if (in_array($ident, ['StoerungAktiv', 'StoerungenText', 'StoerungHistorie'], true)) {
+                return ['stoerungen', 'Störungen', 90];
+            }
+            return $ident === 'Telegramprotokoll' ? ['diagnose', 'Diagnose', 99] : null;
+        }
+        if (preg_match('/^HK(\d)$/', $group, $m)) {
+            return [strtolower($group), $m[1] === '5' ? 'Heizkreis 5 / HK0 (Kesselkreis)' : 'Heizkreis ' . $m[1], 10 + (int) $m[1]];
+        }
+        $names = [
+            'WW' => ['warmwasser', 'Warmwasser', 20], 'LEGI' => ['legionellen', 'Legionellen-Automatik', 25],
+            'Kessel' => ['kessel', 'Kessel / Brenner', 30], 'Solar' => ['solar', 'Solar', 40],
+            'Strat447' => ['strat447', 'Strategie FM447', 50], 'StratUBA' => ['stratuba', 'Strategie UBA', 51],
+            'StratFM458' => ['stratfm458', 'Strategie FM458', 52],
+        ];
+        return $names[$group] ?? null;
+    }
+
+    /** Kategorie unterhalb der Instanz anlegen/holen. Liefert die Instanz-ID, falls Kategorien dort nicht moeglich sind. */
+    private function EnsureCategory(array $cat): int
+    {
+        [$key, $name, $pos] = $cat;
+        $ident = 'cat_' . $key;
+        $id = $this->IdMap()[$ident] ?? 0;
+        if ($id === 0) {
+            $id = IPS_CreateCategory();
+            IPS_SetIdent($id, $ident);
+            @IPS_SetParent($id, $this->InstanceID);
+            if (IPS_GetObject($id)['ParentID'] !== $this->InstanceID) {
+                IPS_DeleteCategory($id);
+                return $this->InstanceID;
+            }
+            $this->idMap = null;
+        }
+        if (IPS_GetName($id) !== $name) {
+            IPS_SetName($id, $name);
+        }
+        IPS_SetPosition($id, $pos);
+        return $id;
     }
 
     /** Variablendefinitionen: [Gruppe, Ident, Name, Typ, Profil, bedienbar, Position]. */
@@ -1120,7 +1259,7 @@ class Logamatic4000 extends IPSModule
         $defs = [];
         $pos = 0;
         $add = function (string $g, string $id, string $name, int $type, string $prof = '', bool $act = false) use (&$defs, &$pos) {
-            $defs[] = [$g, $id, $name, $type, $prof, $act, $pos++];
+            $defs[] = [$g, $id, trim($name), $type, $prof, $act, $pos++];
         };
 
         $add('ALLG', 'Status', 'Status', $S);
@@ -1133,11 +1272,12 @@ class Logamatic4000 extends IPSModule
         $add('ALLG', 'StoerungAktiv', 'Störung aktiv', $B, '~Alert');
         $add('ALLG', 'StoerungenText', 'Offene Störungen', $S);
         $add('ALLG', 'StoerungHistorie', 'Störungshistorie', $S);
+        $add('ALLG', 'Telegramprotokoll', 'Telegrammprotokoll (nur bei Debug)', $S);
 
         foreach ([1, 2, 3, 4, 5] as $n) {
             $g = 'HK' . $n;
             $p = $g . '_';
-            $nm = $n === 5 ? 'Heizkreis 5 / HK0 (Kesselkreis)' : 'Heizkreis ' . $n;
+            $nm = ''; // der Heizkreis steht im Kategorienamen
             $add($g, $p . 'Betriebsart', $nm . ' Betriebsart', $I, 'BLM.Betriebsart', true);
             $add($g, $p . 'Tag', $nm . ' Tagtemperatur', $F, 'BLM.TempTag', true);
             $add($g, $p . 'Nacht', $nm . ' Nachttemperatur', $F, 'BLM.TempNacht', true);

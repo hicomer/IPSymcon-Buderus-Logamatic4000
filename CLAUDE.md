@@ -68,6 +68,14 @@ tests/protocol_test.php    PHP-CLI-Tests ohne Symcon (php tests/protocol_test.ph
 * Schaltuhr: 90 Byte je Kanal (Programm, Pause, Party, Ferien, 2× 0xFF, 42 Schaltpunkte à 2 Byte),
   Zeitraster 10 Minuten, ungültiger Punkt = `194, 144`. Unit-Test vergleicht „Familie“ mit der Doku-Tabelle.
 
+## Stand nach erstem Test (13.10.2026)
+
+* Verbindung läuft: Außentemperatur, Anlagenvorlauf, Version 4.17 und Schaltuhr werden korrekt gelesen.
+* Variablen liegen in Kategorien unter der Instanz (Heizkreis n, Warmwasser, Kessel, Solar, Störungen …).
+  IDs werden über eigene `IdMap()` aufgelöst, weil `GetIDForIdent`/`MaintainVariable` nur direkte Kinder finden.
+* Gateway sendet im Normal-Modus selbst: Senden erst nach 0,4 s Leitungsruhe, bis zu 25 Konflikt-Wiederholungen.
+* Zu prüfen: HK5-Werte (Vorlauf Ist 110, Raum Ist 55) wirken unplausibel, Rohbytes mit `BLM_GetRaw` ansehen.
+
 ## Offener Stand / Nächste Schritte
 
 * **Nicht an Hardware getestet.** Erster Test: Debug-Option an, Rohtelegramme prüfen (Offsets, Einheiten).
