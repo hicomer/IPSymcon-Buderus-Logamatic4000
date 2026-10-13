@@ -114,6 +114,14 @@ class Logamatic4000 extends IPSModule
                 IPS_SetName($id, $name);
             }
             IPS_SetPosition($id, $pos);
+            if ($action && IPS_GetVariable($id)['VariableAction'] !== $this->InstanceID) {
+                // EnableAction findet die Variable nur direkt unter der Instanz; die Aktion bleibt beim Verschieben erhalten
+                if (IPS_GetObject($id)['ParentID'] !== $this->InstanceID) {
+                    IPS_SetParent($id, $this->InstanceID);
+                    $this->idMap = null;
+                }
+                $this->EnableAction($ident);
+            }
             $cat = $this->CategoryOf($group, $ident);
             $parent = $this->InstanceID;
             if ($cat !== null) {
@@ -123,9 +131,6 @@ class Logamatic4000 extends IPSModule
             if (IPS_GetObject($id)['ParentID'] !== $parent) {
                 IPS_SetParent($id, $parent);
                 $this->idMap = null;
-            }
-            if ($action) {
-                IPS_SetVariableCustomAction($id, $this->InstanceID); // ruft RequestAction der Instanz auf
             }
         }
         foreach ($this->IdMap() as $ident => $cid) { // nicht mehr benoetigte Kategorien entfernen
