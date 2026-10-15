@@ -92,7 +92,7 @@ tests/protocol_test.php    PHP-CLI-Tests ohne Symcon (php tests/protocol_test.ph
 
 * **Nicht an Hardware getestet.** Erster Test: Debug-Option an, Rohtelegramme prüfen (Offsets, Einheiten).
 * Zurücklesen nicht-dokumentierter Parametertypen (`ReadParams`) ist experimentell.
-* Brennerlaufzeiten werden als Minuten angenommen.
+* Brennerlaufzeiten sind Minuten (bestätigt gegen die alte Kopplung); Solar-Betriebsstunden-Einheit weiter unklar.
 * Nicht umgesetzt: wandhängende Kessel (UBA-Monitorwerte), Wärmemengenzähler, Unterstation,
   Strategie-Monitorwerte (nur deren Parameter sind bedienbar), mehrere Regelgeräte je Instanz.
 * Ideen für weitere Automatismen: Störungsmeldung per Push, Ferienmodus aus Anwesenheit,

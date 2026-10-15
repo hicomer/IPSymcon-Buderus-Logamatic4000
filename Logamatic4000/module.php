@@ -591,7 +591,7 @@ class Logamatic4000 extends IPSModule
             foreach ($vals as $k => $v) {
                 $ident = $prefix . $k;
                 if ($prefix === 'Kessel_' && ($k === 'LaufzeitStufe1' || $k === 'LaufzeitStufe2')) {
-                    $v = round($v / 60, 1);
+                    $v = round($v / 60, 4); // Minuten -> Stunden, volle Minutenaufloesung fuer Zaehler-Archive
                 }
                 $this->SV($ident, $v);
             }

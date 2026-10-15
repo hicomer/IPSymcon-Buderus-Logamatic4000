@@ -210,8 +210,8 @@ final class LogamaticData
         self::set($o, 'Waermemenge2', $w2 === null ? null : $w2 / 10);
         $h1 = self::u($b, 24, 25, 26);
         $h2 = self::u($b, 30, 31, 32);
-        self::set($o, 'Betriebsstunden1', $h1 === null ? null : round($h1 / 60, 1)); // min -> h
-        self::set($o, 'Betriebsstunden2', $h2 === null ? null : round($h2 / 60, 1));
+        self::set($o, 'Betriebsstunden1', $h1 === null ? null : round($h1 / 60, 4)); // min -> h
+        self::set($o, 'Betriebsstunden2', $h2 === null ? null : round($h2 / 60, 4));
         return $o;
     }
 

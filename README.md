@@ -113,8 +113,8 @@ Noch nicht jeweils einzeln am Gerät geprüft:
   (Offset 0x2A, im Dump nicht enthalten).
 * **Ferien-Absenkart/Außenhalt** (Offset 0x3F) und **Brennerleistungen/Korrekturpunkte** (0x4D/0x54): nicht im
   Dump, daher kein Zurücklesen; die Schreibpositionen stammen nur aus dem PDF.
-* **Einheiten**: Brennerlaufzeiten als Minuten angenommen; die Solar-Betriebsstunden ergeben unplausible Werte,
-  die Einheit ist unklar. Mit dem Migrations-Vergleich alt/neu prüfen und ggf. den Faktor im Modul anpassen.
+* **Einheiten**: Die Brennerlaufzeit ist als Minuten bestätigt (Vergleich mit einer alten Kopplung: Stunden identisch).
+  Die Solar-Betriebsstunden ergeben unplausible Werte, die Einheit ist unklar.
 * **Mischer** ist als vorzeichenbehaftete Puls/Pause-Ansteuerung gedeutet (−100 % = zu).
 * **Legionellen-Automatik** im Dauerbetrieb (Aussetzen und Wiedereinschalten über mehrere Wochen) noch nicht
   beobachtet. Ein Gateway-Telegramm `0xA5` ist unbekannt und wird ignoriert.
