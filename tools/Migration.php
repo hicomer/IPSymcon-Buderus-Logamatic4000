@@ -159,21 +159,29 @@ foreach ($MAP as $old => $m) {
         }
     }
 
-    // 4. Skripte mit der alten ID im Text
+    // 4. Skripte mit der alten ID im Text (das Migrationsskript selbst und Skripte ohne Datei werden uebersprungen)
     foreach (IPS_GetScriptList() as $s) {
-        $src = IPS_GetScriptContent($s);
-        if (preg_match('/(?<!\d)' . $old . '(?!\d)/', $src)) {
-            mg_say("Skript #$s (" . IPS_GetName($s) . ') enthaelt die ID ' . $old . ($REPLACE_IN_SCRIPTS ? ' -> wird ersetzt' : ' (bitte von Hand pruefen)'));
-            if ($REPLACE_IN_SCRIPTS && !$DRY_RUN) {
-                if ($f !== 1.0) {
-                    mg_say('  NICHT ersetzt: Faktor ist ungleich 1, dort muss umgerechnet werden');
-                } else {
-                    IPS_SetScriptContent($s, preg_replace('/(?<!\d)' . $old . '(?!\d)/', (string) $new, $src));
-                }
+        if ($s === ($_IPS['SELF'] ?? 0) || !@IPS_ScriptExists($s)) {
+            continue;
+        }
+        $src = @IPS_GetScriptContent($s);
+        if ($src === false || $src === '' || !preg_match('/(?<!\d)' . $old . '(?!\d)/', $src)) {
+            continue;
+        }
+        mg_say("Skript #$s (" . IPS_GetName($s) . ') enthaelt die ID ' . $old . ($REPLACE_IN_SCRIPTS ? ' -> wird ersetzt' : ' (bitte von Hand pruefen):'));
+        foreach (explode("\n", $src) as $n => $line) {
+            if (preg_match('/(?<!\d)' . $old . '(?!\d)/', $line)) {
+                mg_say(sprintf('    Zeile %d: %s', $n + 1, trim(mb_substr($line, 0, 140))));
+            }
+        }
+        if ($REPLACE_IN_SCRIPTS && !$DRY_RUN) {
+            if ($f !== 1.0) {
+                mg_say('  NICHT ersetzt: Faktor ist ungleich 1, dort muss umgerechnet werden');
+            } else {
+                IPS_SetScriptContent($s, preg_replace('/(?<!\d)' . $old . '(?!\d)/', (string) $new, $src));
             }
         }
     }
-
     // 5. Alte Variable markieren
     if ($HIDE_OLD && !$DRY_RUN) {
         IPS_SetName($old, IPS_GetName($old) . ' (alt)');
