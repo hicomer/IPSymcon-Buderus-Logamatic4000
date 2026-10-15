@@ -19,6 +19,7 @@
  */
 
 $INSTANCE_ID = 0;      // ID der Instanz "Logamatic 4000"
+$SUGGEST_FROM = 0;       // ID der ALTEN Kategorie (z.B. 'Buderus'): schlaegt fertige $MAP-Zeilen vor und beendet das Skript
 $LIST_VARIABLES = false; // true = nur alle Variablen des Moduls mit ID, Ident und Name auflisten
 $DRY_RUN = true;       // true = nur anzeigen, false = ausfuehren
 $REPLACE_IN_SCRIPTS = false; // true = alte ID in Skripttexten durch die neue ersetzen (nur mit Vorsicht)
@@ -69,6 +70,78 @@ if ($INSTANCE_ID <= 0 || !IPS_InstanceExists($INSTANCE_ID)) {
 }
 $archives = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}');
 $arch = $archives[0] ?? 0;
+if ($SUGGEST_FROM > 0) {
+    // ---- Vorschlagsmodus: alte Variablen den neuen Modul-Variablen zuordnen (nach Namensaehnlichkeit) ----
+    $norm = function (string $s): string {
+        $s = strtolower(strtr($s, ['Ä' => 'ae', 'Ö' => 'oe', 'Ü' => 'ue', 'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']));
+        $s = str_replace(['betriebsstunden', 'brennerstarts', 'starts'], ['laufzeit', 'starts', 'starts'], $s);
+        return preg_replace('/[^a-z0-9]+/', '', $s);
+    };
+    $collect = function (int $root, string $path) use (&$collect, $INSTANCE_ID): array {
+        $out = [];
+        foreach (IPS_GetChildrenIDs($root) as $c) {
+            if ($c === $INSTANCE_ID) {
+                continue;
+            }
+            $p = $path . '\\' . IPS_GetName($c);
+            if (IPS_VariableExists($c)) {
+                $out[$c] = $p;
+            } elseif (IPS_HasChildren($c)) {
+                $out += $collect($c, $p);
+            }
+        }
+        return $out;
+    };
+    $new = [];
+    foreach (IPS_GetChildrenIDs($INSTANCE_ID) as $c) {
+        $cat = IPS_GetObject($c)['ObjectType'] === 0 ? IPS_GetName($c) : '';
+        foreach (($cat !== '' ? IPS_GetChildrenIDs($c) : [$c]) as $v) {
+            if (IPS_VariableExists($v)) {
+                $new[$v] = ['ident' => IPS_GetObject($v)['ObjectIdent'], 'key' => $norm($cat . ' ' . IPS_GetName($v)), 'idn' => $norm(IPS_GetObject($v)['ObjectIdent'])];
+            }
+        }
+    }
+    $done = array_keys($MAP);
+    $doneNew = [];
+    foreach ($MAP as $m) {
+        $doneNew[] = isset($m['id']) ? (int) $m['id'] : mg_find($INSTANCE_ID, (string) ($m['ident'] ?? ''));
+    }
+    mg_say('=== VORSCHLAG fuer $MAP (bitte pruefen, Zeilen mit // sind unsicher) ===');
+    foreach ($collect($SUGGEST_FROM, IPS_GetName($SUGGEST_FROM)) as $old => $path) {
+        if (in_array($old, $done, true)) {
+            continue;
+        }
+        $parts = explode('\\', $path);
+        $o = $norm(implode(' ', array_slice($parts, -2)));
+        $best = [0, 0];
+        foreach ($new as $nid => $n) {
+            if (in_array($nid, $doneNew, true)) {
+                continue;
+            }
+            similar_text($o, $n['key'], $a);
+            similar_text($o, $n['idn'], $b);
+            $score = max($a, $b);
+            $ov = GetValue($old);
+            $nv = GetValue($nid);
+            if (is_numeric($ov) && is_numeric($nv) && abs($ov) > 0 && abs($nv) > 0 && abs($nv / $ov - 1) < 0.3) {
+                $score += 10; // aehnliche Werte
+            }
+            if ($score > $best[0]) {
+                $best = [$score, $nid];
+            }
+        }
+        if ($best[1] === 0) {
+            mg_say("// $old  $path  -> kein Kandidat");
+            continue;
+        }
+        $nid = $best[1];
+        $ov = GetValue($old);
+        $nv = GetValue($nid);
+        $mark = $best[0] >= 70 ? '' : '// ';
+        mg_say(sprintf("%s%d => ['id' => %d, 'faktor' => 1.0],  // %s -> %s (Aehnlichkeit %d%%) alt=%s neu=%s", $mark, $old, $nid, $path, $new[$nid]['ident'], $best[0], json_encode($ov), json_encode($nv)));
+    }
+    die();
+}
 if ($LIST_VARIABLES) {
     foreach (IPS_GetChildrenIDs($INSTANCE_ID) as $c) {
         $o = IPS_GetObject($c);

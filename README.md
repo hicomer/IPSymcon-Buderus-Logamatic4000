@@ -84,6 +84,7 @@ Der COM-Port-Adapter erlaubt nur eine Verbindung. Eine alte Kopplung steht also,
 Parallelbetrieb ist nicht möglich. Die alten Variablen bleiben mit ihrem letzten Wert stehen und können jetzt auf die
 neuen umgestellt werden:
 
+0. Optional: mit `$SUGGEST_FROM` = ID der alten Kategorie schlägt das Skript fertige `MAP`-Zeilen vor (Zuordnung nach Namensähnlichkeit und Werten, unsichere Zeilen auskommentiert).
 1. [`tools/Migration.php`](tools/Migration.php) als Skript in Symcon anlegen, `$INSTANCE_ID` und die Tabelle
    `$MAP` (alte Variablen-ID → Ident der neuen Variable, Umrechnungsfaktor) füllen und mit `$DRY_RUN = true`
    starten. Es zeigt je Variable den **eingefrorenen alten Wert mit Zeitpunkt der letzten Aktualisierung** neben dem neuen
