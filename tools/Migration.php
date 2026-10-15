@@ -19,12 +19,14 @@
  */
 
 $INSTANCE_ID = 0;      // ID der Instanz "Logamatic 4000"
+$LIST_VARIABLES = false; // true = nur alle Variablen des Moduls mit ID, Ident und Name auflisten
 $DRY_RUN = true;       // true = nur anzeigen, false = ausfuehren
 $REPLACE_IN_SCRIPTS = false; // true = alte ID in Skripttexten durch die neue ersetzen (nur mit Vorsicht)
 $HIDE_OLD = false;     // true = alte Variable umbenennen ("... (alt)") und ausblenden
 
 /**
- * alteVariablenID => ['ident' => Ident der neuen Variable, 'faktor' => Umrechnung alt -> neu (neu = alt * faktor)]
+ * alteVariablenID => [neue Variable angeben mit 'id' => ID ODER 'ident' => Ident, 'faktor' => Umrechnung alt -> neu (neu = alt * faktor)]
+ * Der Ident ist der feste interne Name der neuen Variable (steht in der Liste mit $LIST_VARIABLES = true). Die ID geht genauso.
  *
  * Haeufige Idents: Aussentemperatur, AussentemperaturGedaempft, AnlagenVorlaufIst, WW_Ist, WW_Soll,
  * Kessel_VorlaufIst, Kessel_Abgastemperatur, Kessel_LaufzeitStufe1 (Stunden), Kessel_StartsStufe1,
@@ -34,6 +36,7 @@ $HIDE_OLD = false;     // true = alte Variable umbenennen ("... (alt)") und ausb
  */
 $MAP = [
     // 12345 => ['ident' => 'Aussentemperatur', 'faktor' => 1.0],
+    // 12346 => ['id' => 54321, 'faktor' => 1.0],   // neue Variable direkt per ID
     // 23456 => ['ident' => 'Kessel_LaufzeitStufe1', 'faktor' => 1 / 3600],
 ];
 
@@ -66,13 +69,25 @@ if ($INSTANCE_ID <= 0 || !IPS_InstanceExists($INSTANCE_ID)) {
 }
 $archives = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}');
 $arch = $archives[0] ?? 0;
+if ($LIST_VARIABLES) {
+    foreach (IPS_GetChildrenIDs($INSTANCE_ID) as $c) {
+        $o = IPS_GetObject($c);
+        $items = $o['ObjectType'] === 0 ? IPS_GetChildrenIDs($c) : [$c];
+        foreach ($items as $v) {
+            if (IPS_VariableExists($v)) {
+                mg_say(sprintf('#%d  %-32s  %s', $v, IPS_GetObject($v)['ObjectIdent'], IPS_GetName($v)));
+            }
+        }
+    }
+    die();
+}
 mg_say($DRY_RUN ? '=== PROBELAUF (es wird nichts veraendert) ===' : '=== AUSFUEHRUNG ===');
 
 foreach ($MAP as $old => $m) {
-    $new = mg_find($INSTANCE_ID, $m['ident']);
+    $new = isset($m['id']) ? (int) $m['id'] : mg_find($INSTANCE_ID, (string) ($m['ident'] ?? ''));
     $f = (float) ($m['faktor'] ?? 1.0);
-    mg_say("\n--- alt #$old " . (IPS_VariableExists($old) ? IPS_GetName($old) : '(fehlt)') . " -> neu '{$m['ident']}' #$new ---");
-    if (!IPS_VariableExists($old) || $new === 0) {
+    mg_say("\n--- alt #$old " . (IPS_VariableExists($old) ? IPS_GetName($old) : '(fehlt)') . " -> neu '" . ($m['ident'] ?? $m['id'] ?? '?') . "' #$new ---");
+    if (!IPS_VariableExists($old) || $new === 0 || !IPS_VariableExists($new)) {
         mg_say('ueberspringe: alte oder neue Variable nicht gefunden');
         continue;
     }
