@@ -12,7 +12,7 @@
  *  5. Optional: alte Variable umbenennen und ausblenden.
  *
  * Nichts wird geloescht. Zuerst mit $DRY_RUN = true laufen lassen: das Skript zeigt nur, was es tun wuerde, und
- * vergleicht alte und neue Werte (Pruefung der Einheit, z.B. Brennerlaufzeit).
+ * vergleicht alte und neue Werte (Pruefung der Einheit, z.B. Brennerlaufzeit; der alte Wert ist eingefroren).
  *
  * Als Skript in Symcon anlegen und ausfuehren. Die Skript-Ausfuehrung ist bei vielen Archivwerten langsam
  * (Sekunden bis Minuten), das Zeitlimit des Skripts ggf. in den Skript-Einstellungen erhoehen.
@@ -78,7 +78,8 @@ foreach ($MAP as $old => $m) {
     }
 
     // Pruefung der Einheit: alter und neuer Wert nebeneinander
-    mg_say(sprintf('Wert alt = %s, alt*faktor = %s, neu = %s', json_encode(GetValue($old)), json_encode(GetValue($old) * $f), json_encode(GetValue($new))));
+    // (der alte Wert ist eingefroren, seit die alte Kopplung nicht mehr laeuft; Zaehler muessen neu >= alt*faktor sein)
+    mg_say(sprintf('Wert alt = %s (zuletzt %s), alt*faktor = %s, neu = %s', json_encode(GetValue($old)), date('d.m.Y H:i:s', IPS_GetVariable($old)['VariableUpdated']), json_encode(GetValue($old) * $f), json_encode(GetValue($new))));
 
     // 1. Verlauf
     if ($arch > 0 && AC_GetLoggingStatus($arch, $old)) {

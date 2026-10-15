@@ -80,21 +80,25 @@ Warmwasser, Kessel und Solar sind aktiv. Gibt es zusätzliche Heizkreismodule (F
 
 ## Migration von vorhandenen Variablen (Archiv, Verknüpfungen, Ereignisse)
 
-Wer schon Variablen mit Archiv, Links und Ereignissen hat, kann sie auf die neuen Variablen umstellen:
+Der COM-Port-Adapter erlaubt nur eine Verbindung. Eine alte Kopplung steht also, sobald dieses Modul läuft; ein
+Parallelbetrieb ist nicht möglich. Die alten Variablen bleiben mit ihrem letzten Wert stehen und können jetzt auf die
+neuen umgestellt werden:
 
-1. **Parallelbetrieb**: Modul einrichten und einige Tage neben den alten Variablen laufen lassen. Alte und neue
-   Werte vergleichen, besonders **Einheiten** (z. B. Brennerlaufzeit: Stunden, Minuten oder Sekunden?).
-2. [`tools/Migration.php`](tools/Migration.php) als Skript in Symcon anlegen, `$INSTANCE_ID` und die Tabelle
+1. [`tools/Migration.php`](tools/Migration.php) als Skript in Symcon anlegen, `$INSTANCE_ID` und die Tabelle
    `$MAP` (alte Variablen-ID → Ident der neuen Variable, Umrechnungsfaktor) füllen und mit `$DRY_RUN = true`
-   starten. Es zeigt Wert-Vergleich, Archiv, Links, Ereignisse und Skripte, die die alte ID enthalten.
+   starten. Es zeigt je Variable den **eingefrorenen alten Wert mit Zeitpunkt der letzten Aktualisierung** neben dem neuen
+   Wert, außerdem Archiv, Links, Ereignisse und Skripte, die die alte ID enthalten.
+2. **Einheit prüfen** am Wertepaar: Bei Zählern wie der Brennerlaufzeit muss der neue Wert (mal Faktor) etwas **über** dem
+   alten liegen, nämlich um die Laufzeit seit dem Ausfall der alten Kopplung. Bei Temperaturen sollten beide ähnlich sein.
+   Ist das Verhältnis z. B. 60 oder 3600, stimmt der Faktor nicht.
 3. Mit `$DRY_RUN = false` ausführen. Das Skript schaltet die Archivierung der neuen Variable ein und kopiert den
    Verlauf der alten (nur aus der Zeit vor dem ersten Wert der neuen), zeigt alle Links und Ereignisse auf die
-   neue Variable und listet Skripte mit der alten ID. Es löscht nichts.
+   neue Variable und listet Skripte mit der alten ID. Es löscht nichts. **Vorher Archiv sichern.**
 4. **Skripte** mit festen Variablen-IDs (z. B. Öltank-Berechnung) von Hand auf die neue ID umstellen, bei geänderter
    Einheit den Faktor berücksichtigen. Alternativ die alte Variable als Brücke weiterführen: ein Ereignis auf der neuen
    Variable schreibt den Wert (umgerechnet) in die alte, dann bleiben alle Skripte unverändert.
-5. Alte Variablen erst nach einer Beobachtungszeit löschen.
-
+5. Zwischen dem Ausfall der alten Kopplung und dem Start des Moduls fehlen Werte im Archiv; bei Zählern ist das
+   unkritisch, bei Temperaturen bleibt eine Lücke. Alte Variablen erst nach einer Beobachtungszeit löschen.
 ## Offene Punkte
 
 Bestätigt am Gerät (Logamatic 4211): 3964R-Verbindung, Monitordaten (Heizkreis, Warmwasser, Kessel, Solar,
